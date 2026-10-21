@@ -1,0 +1,86 @@
+{
+  "id": "aruba_clearpass",
+  "name": "Aruba ClearPass (NAC)",
+  "name_en": "HPE Aruba ClearPass (NAC)",
+  "version": "1.0.0",
+  "description": "Control de acceso a la red con Aruba ClearPass: consultar endpoints, autorizar dispositivos, revocar acceso y consultar o desconectar sesiones",
+  "description_en": "Network access control with Aruba ClearPass: query endpoints, authorize devices, revoke access and query or disconnect sessions",
+  "icon": "icon.svg",
+  "category": "networking",
+  "category_en": "networking",
+  "keywords": [
+    "clearpass",
+    "aruba",
+    "nac",
+    "control de acceso",
+    "endpoint",
+    "mac",
+    "sesiones",
+    "sessions",
+    "802.1x",
+    "networking"
+  ],
+  "library": {
+    "package": "ruvic-aruba-clearpass-connector",
+    "install": "pip install git+https://github.com/RuvicDev/CON-093-Aruba-ClearPass.git#subdirectory=lib",
+    "import_name": "ruvic_aruba_clearpass_connector"
+  },
+  "auth_modes": [
+    {
+      "id": "client_credentials",
+      "label": "API Client (OAuth2)",
+      "fields": [
+        {
+          "key": "base_url",
+          "label": "URL de ClearPass",
+          "type": "text",
+          "required": true,
+          "placeholder": "https://clearpass.miempresa.com",
+          "help_text": "URL del servidor ClearPass, sin /api ni barra final"
+        },
+        {
+          "key": "client_id",
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "help_text": "ClearPass Guest → Administration → API Services → API Clients"
+        },
+        {
+          "key": "client_secret",
+          "label": "Client Secret",
+          "type": "password",
+          "secret": true,
+          "required": true
+        },
+        {
+          "key": "verify_ssl",
+          "label": "Verificar certificado SSL",
+          "type": "boolean",
+          "required": false,
+          "default": "true",
+          "help_text": "Desactívalo solo si el equipo usa un certificado autofirmado en una red de confianza"
+        },
+        {
+          "key": "connect_timeout",
+          "label": "Timeout de conexión (segundos)",
+          "type": "number",
+          "required": false,
+          "default": "15"
+        }
+      ]
+    }
+  ],
+  "env_prefix": "RUVIC_ARUBA_CLEARPASS_",
+  "operations": [
+    "endpoints.list",
+    "endpoint.authorize",
+    "endpoint.revoke",
+    "sessions.list",
+    "session.disconnect"
+  ],
+  "test_connection": true,
+  "docs": {
+    "skill": "SKILL.md",
+    "permissions_note": "Crea un API Client (grant type 'Client credentials') con un perfil de operador que solo permita: API Services → Allow API Access; Policy Manager → Identity → Endpoints (lectura/escritura); y Active Sessions (lectura y desconexión). No uses el perfil 'Super Administrator'."
+  }
+}

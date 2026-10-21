@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="doc_title">Conector Aruba ClearPass (NAC) — Guía de configuración | Ruvic</title>
+  <link rel="stylesheet" href="assets/ruvic.css">
+</head>
+<body class="guide">
+<div class="guide-shell">
+<main class="ruvic-container">
+  <nav class="ruvic-toc" aria-label="Índice">
+    <h2 data-i18n="toc_title">Contenido</h2>
+    <ol>
+      <li><a href="#que-es" data-i18n="toc.que_es">¿Qué es y para qué sirve?</a></li>
+      <li><a href="#prerrequisitos" data-i18n="toc.prerrequisitos">Prerrequisitos</a></li>
+      <li><a href="#configuracion-fabricante" data-i18n="toc.configuracion_fabricante">Configuración en el fabricante</a></li>
+      <li><a href="#permisos" data-i18n="toc.permisos">Permisos requeridos</a></li>
+      <li><a href="#configuracion-ruvic" data-i18n="toc.configuracion_ruvic">Configuración en Ruvic</a></li>
+      <li><a href="#verificacion" data-i18n="toc.verificacion">Verificación</a></li>
+      <li><a href="#solucion-problemas" data-i18n="toc.solucion_problemas">Solución de problemas</a></li>
+      <li><a href="#faq-seguridad" data-i18n="toc.faq_seguridad">Preguntas frecuentes y notas de seguridad</a></li>
+    </ol>
+  </nav>
+
+  <h1 data-i18n="guide_title">Conector Aruba ClearPass (NAC) — Guía de configuración</h1>
+  <p class="guide-updated" data-i18n="guide_updated">Última actualización: octubre 2026</p>
+
+  <section id="que-es">
+    <h2 data-i18n="section.que_es">¿Qué es y para qué sirve?</h2>
+    <p data-i18n="que_es.body">El conector Aruba ClearPass permite que el agente de Ruvic consulte y controle el acceso a la red: ver endpoints, autorizar o revocar dispositivos y revisar o desconectar sesiones activas. Puedes pedirle cosas como:</p>
+    <ul>
+      <li data-i18n="que_es.example1">"Autoriza la impresora con MAC 12:34:56:78:90:ab (ticket 881)."</li>
+      <li data-i18n="que_es.example2">"Bloquea el portátil robado y desconéctalo de la red."</li>
+      <li data-i18n="que_es.example3">"¿Desde qué dispositivos está conectada ana.perez?"</li>
+    </ul>
+    <p data-i18n="que_es.ops_intro">Operaciones soportadas:</p>
+    <table>
+      <thead><tr><th data-i18n="table.operacion">Operación</th><th data-i18n="table.que_hace">Qué hace</th></tr></thead>
+      <tbody>
+        <tr><td><code>endpoints.list</code></td><td data-i18n="op.1">Consulta endpoints por estado o por MAC</td></tr>
+        <tr><td><code>endpoint.authorize</code></td><td data-i18n="op.2">Deja un dispositivo en estado Known (escribe)</td></tr>
+        <tr><td><code>endpoint.revoke</code></td><td data-i18n="op.3">Deja un dispositivo en estado Disabled (escribe)</td></tr>
+        <tr><td><code>sessions.list</code></td><td data-i18n="op.4">Consulta sesiones activas</td></tr>
+        <tr><td><code>session.disconnect</code></td><td data-i18n="op.5">Desconecta una sesión activa (escribe)</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-warning">
+      <span class="callout-title" data-i18n="callout.main.title">Estas acciones cambian el acceso real a la red</span>
+      <span data-i18n="callout.main.body">Revocar o desconectar deja sin red a un dispositivo. El agente solo lo hace cuando se lo pides y registra el motivo.</span>
+    </div>
+  </section>
+
+  <section id="prerrequisitos">
+    <h2 data-i18n="section.prerrequisitos">Prerrequisitos</h2>
+    <ul>
+      <li data-i18n="prereq.1">ClearPass Policy Manager 6.x con la API REST habilitada.</li>
+      <li data-i18n="prereq.2">Acceso de administrador a ClearPass Guest para crear el perfil de operador y el API Client.</li>
+      <li data-i18n="prereq.3">Una regla de Enforcement que deniegue los endpoints con estado Disabled.</li>
+    </ul>
+  </section>
+
+  <section id="configuracion-fabricante">
+    <h2 data-i18n="section.configuracion_fabricante">Configuración en el fabricante</h2>
+    <p data-i18n="fabricante.intro">Vas a crear un perfil de operador acotado y un API Client con grant type Client credentials.</p>
+    <ol class="ruvic-steps">
+      <li>
+        <strong data-i18n="step.1.label">Crea el perfil de operador.</strong>
+        <p data-i18n="step.1.body">En <strong>ClearPass Guest → Administration → Operator Logins → Profiles</strong>, crea "Ruvic API" con: API Services → Allow API Access; Policy Manager → Identity → Endpoints (lectura/escritura); Active Sessions (lectura y desconexión).</p>
+      </li>
+      <li>
+        <strong data-i18n="step.2.label">Crea el API Client.</strong>
+        <p data-i18n="step.2.body">En <strong>Administration → API Services → API Clients → Create API client</strong>, elige grant type <strong>Client credentials</strong> y el perfil "Ruvic API". Copia el Client ID y el Client Secret.</p>
+        <div class="screenshot-placeholder" data-i18n="img.step2.placeholder">[ Captura: creación del API Client en ClearPass Guest — reemplazar por assets/img/clearpass-apiclient.png ]</div>
+      </li>
+      <li>
+        <strong data-i18n="step.3.label">Verifica la regla de bloqueo.</strong>
+        <p data-i18n="step.3.body">En el servicio de Enforcement, confirma que existe una regla <code>Endpoints Repository:Status EQUALS Disabled</code> que deniega el acceso.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section id="permisos">
+    <h2 data-i18n="section.permisos">Permisos requeridos</h2>
+    <p data-i18n="permisos.intro">Principio de mínimo privilegio: el perfil de operador solo necesita lo siguiente. No uses Super Administrator.</p>
+    <table>
+      <thead><tr><th data-i18n="table.permiso">Permiso</th><th data-i18n="table.para_que">Para qué lo usa el conector</th></tr></thead>
+      <tbody>
+        <tr><td><code>API Services → Allow API Access</code></td><td data-i18n="perm.1.desc">Usar la API REST</td></tr>
+        <tr><td><code>Identity → Endpoints</code></td><td data-i18n="perm.2.desc">Consultar, autorizar y revocar endpoints</td></tr>
+        <tr><td><code>Active Sessions</code></td><td data-i18n="perm.3.desc">Consultar y desconectar sesiones</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="configuracion-ruvic">
+    <h2 data-i18n="section.configuracion_ruvic">Configuración en Ruvic</h2>
+    <p data-i18n="ruvic.intro">Entra a <strong>Settings → Conectores</strong>, busca la tarjeta <strong>Aruba ClearPass (NAC)</strong> y pulsa <strong>Configurar</strong>. Diligencia el formulario con los valores de la sección anterior:</p>
+    <table>
+      <thead><tr><th data-i18n="table.campo">Campo del formulario</th><th data-i18n="table.valor">Valor</th></tr></thead>
+      <tbody>
+        <tr><td data-i18n="field.base_url">URL de ClearPass</td><td data-i18n="field.base_url.desc">URL del servidor ClearPass, ej. <code>https://clearpass.miempresa.com</code></td></tr>
+        <tr><td data-i18n="field.client_id">Client ID</td><td data-i18n="field.client_id.desc">Client ID del API Client</td></tr>
+        <tr><td data-i18n="field.client_secret">Client Secret</td><td data-i18n="field.client_secret.desc">Client Secret. Se guarda cifrado</td></tr>
+        <tr><td data-i18n="field.verify_ssl">Verificar certificado SSL</td><td data-i18n="field.verify_ssl.desc">Desactívalo solo con certificados autofirmados en redes de confianza</td></tr>
+        <tr><td data-i18n="field.connect_timeout">Timeout de conexión (segundos)</td><td data-i18n="field.connect_timeout.desc">Opcional; <code>15</code> segundos por defecto</td></tr>
+      </tbody>
+    </table>
+    <p data-i18n="ruvic.save">Guarda y pulsa <strong>Probar conexión</strong>: la plataforma valida las credenciales y el acceso.</p>
+    <div class="screenshot-placeholder" data-i18n="img.formulario.placeholder">[ Captura: formulario del conector Aruba ClearPass (NAC) en Settings → Conectores — reemplazar por assets/img/aruba_clearpass-form.png ]</div>
+  </section>
+
+  <section id="verificacion">
+    <h2 data-i18n="section.verificacion">Verificación</h2>
+    <ol class="ruvic-steps">
+      <li>
+        <strong data-i18n="verif.1.label">Test de conexión exitoso.</strong>
+        <p data-i18n="verif.1.body">El botón <em>Probar conexión</em> debe responder con éxito y la tarjeta debe quedar en estado <strong>Configurado</strong>.</p>
+      </li>
+      <li>
+        <strong data-i18n="verif.2.label">Prueba mínima con el agente.</strong>
+        <p data-i18n="verif.2.body">Abre una conversación nueva y pídele:</p>
+        <blockquote data-i18n="verif.2.prompt">"¿Cuántos endpoints deshabilitados hay en ClearPass?"</blockquote>
+        <p data-i18n="verif.2.result">El agente debe responder con datos reales. No le pidas revocar ni desconectar durante la prueba.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section id="solucion-problemas">
+    <h2 data-i18n="section.solucion_problemas">Solución de problemas</h2>
+    <table>
+      <thead><tr><th data-i18n="table.sintoma">Mensaje / síntoma</th><th data-i18n="table.causa">Causa probable y solución</th></tr></thead>
+      <tbody>
+        <tr><td data-i18n="trouble.1.symptom">"Client ID o Client Secret inválidos"</td><td data-i18n="trouble.1.fix">Revisa las credenciales y que el API Client use el grant type Client credentials.</td></tr>
+        <tr><td data-i18n="trouble.2.symptom">"El perfil de operador … no tiene permiso" (403)</td><td data-i18n="trouble.2.fix">Agrega Endpoints o Active Sessions al perfil de operador.</td></tr>
+        <tr><td data-i18n="trouble.3.symptom">El dispositivo revocado sigue conectado</td><td data-i18n="trouble.3.fix">El cambio aplica en la siguiente autenticación. Desconecta su sesión para expulsarlo ya.</td></tr>
+        <tr><td data-i18n="trouble.4.symptom">"mac inválida"</td><td data-i18n="trouble.4.fix">Usa el formato 12:34:56:78:90:ab (también se aceptan guiones o sin separadores).</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="faq-seguridad">
+    <h2 data-i18n="section.faq_seguridad">Preguntas frecuentes y notas de seguridad</h2>
+    <h3 data-i18n="faq.1.q">¿Puede el agente desconectar a todos los usuarios?</h3>
+    <p data-i18n="faq.1.a">No. El conector solo desconecta una sesión por ID y nunca usa la desconexión masiva.</p>
+
+    <h3 data-i18n="faq.2.q">¿Qué diferencia hay entre revocar y desconectar?</h3>
+    <p data-i18n="faq.2.a">Revocar marca el endpoint como Disabled para futuras autenticaciones; desconectar expulsa la sesión actual.</p>
+
+    <h3 data-i18n="faq.3.q">¿Qué hago si el Client Secret se filtra?</h3>
+    <p data-i18n="faq.3.a">Regenera el secreto del API Client en ClearPass Guest y actualízalo en el formulario.</p>
+
+  </section>
+
+</main>
+</div>
+
+<script>
+  const I18N = {
+  "es": {
+    "doc_title": "Conector Aruba ClearPass (NAC) — Guía de configuración | Ruvic",
+    "toc_title": "Contenido",
+    "toc.que_es": "¿Qué es y para qué sirve?",
+    "toc.prerrequisitos": "Prerrequisitos",
+    "toc.configuracion_fabricante": "Configuración en el fabricante",
+    "toc.permisos": "Permisos requeridos",
+    "toc.configuracion_ruvic": "Configuración en Ruvic",
+    "toc.verificacion": "Verificación",
+    "toc.solucion_problemas": "Solución de problemas",
+    "toc.faq_seguridad": "Preguntas frecuentes y notas de seguridad",
+    "guide_title": "Conector Aruba ClearPass (NAC) — Guía de configuración",
+    "guide_updated": "Última actualización: octubre 2026",
+    "section.que_es": "¿Qué es y para qué sirve?",
+    "que_es.body": "El conector Aruba ClearPass permite que el agente de Ruvic consulte y controle el acceso a la red: ver endpoints, autorizar o revocar dispositivos y revisar o desconectar sesiones activas. Puedes pedirle cosas como:",
+    "que_es.example1": "\"Autoriza la impresora con MAC 12:34:56:78:90:ab (ticket 881).\"",
+    "que_es.example2": "\"Bloquea el portátil robado y desconéctalo de la red.\"",
+    "que_es.example3": "\"¿Desde qué dispositivos está conectada ana.perez?\"",
+    "que_es.ops_intro": "Operaciones soportadas:",
+    "table.operacion": "Operación",
+    "table.que_hace": "Qué hace",
+    "op.1": "Consulta endpoints por estado o por MAC",
+    "op.2": "Deja un dispositivo en estado Known (escribe)",
+    "op.3": "Deja un dispositivo en estado Disabled (escribe)",
+    "op.4": "Consulta sesiones activas",
+    "op.5": "Desconecta una sesión activa (escribe)",
+    "callout.main.title": "Estas acciones cambian el acceso real a la red",
+    "callout.main.body": "Revocar o desconectar deja sin red a un dispositivo. El agente solo lo hace cuando se lo pides y registra el motivo.",
+    "section.prerrequisitos": "Prerrequisitos",
+    "prereq.1": "ClearPass Policy Manager 6.x con la API REST habilitada.",
+    "prereq.2": "Acceso de administrador a ClearPass Guest para crear el perfil de operador y el API Client.",
+    "prereq.3": "Una regla de Enforcement que deniegue los endpoints con estado Disabled.",
+    "section.configuracion_fabricante": "Configuración en el fabricante",
+    "fabricante.intro": "Vas a crear un perfil de operador acotado y un API Client con grant type Client credentials.",
+    "step.1.label": "Crea el perfil de operador.",
+    "step.1.body": "En <strong>ClearPass Guest → Administration → Operator Logins → Profiles</strong>, crea \"Ruvic API\" con: API Services → Allow API Access; Policy Manager → Identity → Endpoints (lectura/escritura); Active Sessions (lectura y desconexión).",
+    "step.2.label": "Crea el API Client.",
+    "step.2.body": "En <strong>Administration → API Services → API Clients → Create API client</strong>, elige grant type <strong>Client credentials</strong> y el perfil \"Ruvic API\". Copia el Client ID y el Client Secret.",
+    "img.step2.placeholder": "[ Captura: creación del API Client en ClearPass Guest — reemplazar por assets/img/clearpass-apiclient.png ]",
+    "step.3.label": "Verifica la regla de bloqueo.",
+    "step.3.body": "En el servicio de Enforcement, confirma que existe una regla <code>Endpoints Repository:Status EQUALS Disabled</code> que deniega el acceso.",
+    "section.permisos": "Permisos requeridos",
+    "permisos.intro": "Principio de mínimo privilegio: el perfil de operador solo necesita lo siguiente. No uses Super Administrator.",
+    "table.permiso": "Permiso",
+    "table.para_que": "Para qué lo usa el conector",
+    "perm.1.desc": "Usar la API REST",
+    "perm.2.desc": "Consultar, autorizar y revocar endpoints",
+    "perm.3.desc": "Consultar y desconectar sesiones",
+    "section.configuracion_ruvic": "Configuración en Ruvic",
+    "ruvic.intro": "Entra a <strong>Settings → Conectores</strong>, busca la tarjeta <strong>Aruba ClearPass (NAC)</strong> y pulsa <strong>Configurar</strong>. Diligencia el formulario con los valores de la sección anterior:",
+    "table.campo": "Campo del formulario",
+    "table.valor": "Valor",
+    "field.base_url": "URL de ClearPass",
+    "field.base_url.desc": "URL del servidor ClearPass, ej. <code>https://clearpass.miempresa.com</code>",
+    "field.client_id": "Client ID",
+    "field.client_id.desc": "Client ID del API Client",
+    "field.client_secret": "Client Secret",
+    "field.client_secret.desc": "Client Secret. Se guarda cifrado",
+    "field.verify_ssl": "Verificar certificado SSL",
+    "field.verify_ssl.desc": "Desactívalo solo con certificados autofirmados en redes de confianza",
+    "field.connect_timeout": "Timeout de conexión (segundos)",
+    "field.connect_timeout.desc": "Opcional; <code>15</code> segundos por defecto",
+    "ruvic.save": "Guarda y pulsa <strong>Probar conexión</strong>: la plataforma valida las credenciales y el acceso.",
+    "img.formulario.placeholder": "[ Captura: formulario del conector Aruba ClearPass (NAC) en Settings → Conectores — reemplazar por assets/img/aruba_clearpass-form.png ]",
+    "section.verificacion": "Verificación",
+    "verif.1.label": "Test de conexión exitoso.",
+    "verif.1.body": "El botón <em>Probar conexión</em> debe responder con éxito y la tarjeta debe quedar en estado <strong>Configurado</strong>.",
+    "verif.2.label": "Prueba mínima con el agente.",
+    "verif.2.body": "Abre una conversación nueva y pídele:",
+    "verif.2.prompt": "\"¿Cuántos endpoints deshabilitados hay en ClearPass?\"",
+    "verif.2.result": "El agente debe responder con datos reales. No le pidas revocar ni desconectar durante la prueba.",
+    "section.solucion_problemas": "Solución de problemas",
+    "table.sintoma": "Mensaje / síntoma",
+    "table.causa": "Causa probable y solución",
+    "trouble.1.symptom": "\"Client ID o Client Secret inválidos\"",
+    "trouble.1.fix": "Revisa las credenciales y que el API Client use el grant type Client credentials.",
+    "trouble.2.symptom": "\"El perfil de operador … no tiene permiso\" (403)",
+    "trouble.2.fix": "Agrega Endpoints o Active Sessions al perfil de operador.",
+    "trouble.3.symptom": "El dispositivo revocado sigue conectado",
+    "trouble.3.fix": "El cambio aplica en la siguiente autenticación. Desconecta su sesión para expulsarlo ya.",
+    "trouble.4.symptom": "\"mac inválida\"",
+    "trouble.4.fix": "Usa el formato 12:34:56:78:90:ab (también se aceptan guiones o sin separadores).",
+    "section.faq_seguridad": "Preguntas frecuentes y notas de seguridad",
+    "faq.1.q": "¿Puede el agente desconectar a todos los usuarios?",
+    "faq.1.a": "No. El conector solo desconecta una sesión por ID y nunca usa la desconexión masiva.",
+    "faq.2.q": "¿Qué diferencia hay entre revocar y desconectar?",
+    "faq.2.a": "Revocar marca el endpoint como Disabled para futuras autenticaciones; desconectar expulsa la sesión actual.",
+    "faq.3.q": "¿Qué hago si el Client Secret se filtra?",
+    "faq.3.a": "Regenera el secreto del API Client en ClearPass Guest y actualízalo en el formulario.",
+  },
+  "en": {
+    "doc_title": "HPE Aruba ClearPass (NAC) Connector — Setup Guide | Ruvic",
+    "toc_title": "Contents",
+    "toc.que_es": "What is it and what is it for?",
+    "toc.prerrequisitos": "Prerequisites",
+    "toc.configuracion_fabricante": "Vendor-side setup",
+    "toc.permisos": "Required permissions",
+    "toc.configuracion_ruvic": "Setup in Ruvic",
+    "toc.verificacion": "Verification",
+    "toc.solucion_problemas": "Troubleshooting",
+    "toc.faq_seguridad": "FAQ and security notes",
+    "guide_title": "HPE Aruba ClearPass (NAC) Connector — Setup Guide",
+    "guide_updated": "Last updated: October 2026",
+    "section.que_es": "What is it and what is it for?",
+    "que_es.body": "The Aruba ClearPass connector lets the Ruvic agent query and control network access: view endpoints, authorize or revoke devices and review or disconnect active sessions. You can ask things like:",
+    "que_es.example1": "\"Authorize the printer with MAC 12:34:56:78:90:ab (ticket 881).\"",
+    "que_es.example2": "\"Block the stolen laptop and disconnect it from the network.\"",
+    "que_es.example3": "\"Which devices is ana.perez connected from?\"",
+    "que_es.ops_intro": "Supported operations:",
+    "table.operacion": "Operation",
+    "table.que_hace": "What it does",
+    "op.1": "Queries endpoints by status or MAC",
+    "op.2": "Sets a device to Known (writes)",
+    "op.3": "Sets a device to Disabled (writes)",
+    "op.4": "Queries active sessions",
+    "op.5": "Disconnects an active session (writes)",
+    "callout.main.title": "These actions change real network access",
+    "callout.main.body": "Revoking or disconnecting cuts a device off the network. The agent only does it when you ask and records the reason.",
+    "section.prerrequisitos": "Prerequisites",
+    "prereq.1": "ClearPass Policy Manager 6.x with the REST API enabled.",
+    "prereq.2": "Admin access to ClearPass Guest to create the operator profile and API client.",
+    "prereq.3": "An Enforcement rule that denies endpoints with Disabled status.",
+    "section.configuracion_fabricante": "Vendor-side setup",
+    "fabricante.intro": "You will create a scoped operator profile and an API client with the Client credentials grant type.",
+    "step.1.label": "Create the operator profile.",
+    "step.1.body": "In <strong>ClearPass Guest → Administration → Operator Logins → Profiles</strong>, create \"Ruvic API\" with: API Services → Allow API Access; Policy Manager → Identity → Endpoints (read/write); Active Sessions (read and disconnect).",
+    "step.2.label": "Create the API client.",
+    "step.2.body": "In <strong>Administration → API Services → API Clients → Create API client</strong>, choose grant type <strong>Client credentials</strong> and the \"Ruvic API\" profile. Copy the Client ID and Client Secret.",
+    "img.step2.placeholder": "[ Screenshot: API client creation in ClearPass Guest — replace with assets/img/clearpass-apiclient.png ]",
+    "step.3.label": "Check the block rule.",
+    "step.3.body": "In the Enforcement service, confirm there is a rule <code>Endpoints Repository:Status EQUALS Disabled</code> that denies access.",
+    "section.permisos": "Required permissions",
+    "permisos.intro": "Least privilege: the operator profile only needs the following. Don't use Super Administrator.",
+    "table.permiso": "Permission",
+    "table.para_que": "What the connector uses it for",
+    "perm.1.desc": "Use the REST API",
+    "perm.2.desc": "Query, authorize and revoke endpoints",
+    "perm.3.desc": "Query and disconnect sessions",
+    "section.configuracion_ruvic": "Setup in Ruvic",
+    "ruvic.intro": "Go to <strong>Settings → Connectors</strong>, find the <strong>HPE Aruba ClearPass (NAC)</strong> card and click <strong>Configure</strong>. Fill in the form with the values from the previous section:",
+    "table.campo": "Form field",
+    "table.valor": "Value",
+    "field.base_url": "ClearPass URL",
+    "field.base_url.desc": "ClearPass server URL, e.g. <code>https://clearpass.miempresa.com</code>",
+    "field.client_id": "Client ID",
+    "field.client_id.desc": "API client Client ID",
+    "field.client_secret": "Client Secret",
+    "field.client_secret.desc": "Client Secret. Stored encrypted",
+    "field.verify_ssl": "Verify SSL certificate",
+    "field.verify_ssl.desc": "Turn off only with self-signed certificates on trusted networks",
+    "field.connect_timeout": "Connection timeout (seconds)",
+    "field.connect_timeout.desc": "Optional; <code>15</code> seconds by default",
+    "ruvic.save": "Save and click <strong>Test connection</strong>: the platform validates the credentials and access.",
+    "img.formulario.placeholder": "[ Screenshot: HPE Aruba ClearPass (NAC) connector form in Settings → Connectors — replace with assets/img/aruba_clearpass-form.png ]",
+    "section.verificacion": "Verification",
+    "verif.1.label": "Successful connection test.",
+    "verif.1.body": "The <em>Test connection</em> button must succeed and the card must show <strong>Configured</strong>.",
+    "verif.2.label": "Minimal test with the agent.",
+    "verif.2.body": "Open a new conversation and ask:",
+    "verif.2.prompt": "\"How many disabled endpoints are in ClearPass?\"",
+    "verif.2.result": "The agent should answer with real data. Don't ask it to revoke or disconnect during the test.",
+    "section.solucion_problemas": "Troubleshooting",
+    "table.sintoma": "Message / symptom",
+    "table.causa": "Likely cause and fix",
+    "trouble.1.symptom": "\"Invalid Client ID or Client Secret\"",
+    "trouble.1.fix": "Check the credentials and that the API client uses the Client credentials grant type.",
+    "trouble.2.symptom": "\"The operator profile … lacks permission\" (403)",
+    "trouble.2.fix": "Add Endpoints or Active Sessions to the operator profile.",
+    "trouble.3.symptom": "The revoked device is still connected",
+    "trouble.3.fix": "The change applies on the next authentication. Disconnect its session to remove it now.",
+    "trouble.4.symptom": "\"invalid mac\"",
+    "trouble.4.fix": "Use the 12:34:56:78:90:ab format (dashes or no separators also work).",
+    "section.faq_seguridad": "FAQ and security notes",
+    "faq.1.q": "Can the agent disconnect all users?",
+    "faq.1.a": "No. The connector only disconnects one session by ID and never uses bulk disconnect.",
+    "faq.2.q": "What's the difference between revoking and disconnecting?",
+    "faq.2.a": "Revoking marks the endpoint Disabled for future authentications; disconnecting kicks the current session.",
+    "faq.3.q": "What if the Client Secret leaks?",
+    "faq.3.a": "Regenerate the API client's secret in ClearPass Guest and update the form.",
+  },
+  };
+  /* El portal aplica el idioma del usuario (localStorage ruvic-docs-lang)
+     y actualiza [data-i18n], [data-i18n-placeholder] y [data-i18n-alt]. */
+</script>
+</body>
+</html>
